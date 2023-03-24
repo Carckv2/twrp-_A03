@@ -8,8 +8,10 @@
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_keys.mk)
 
-# Inherit some common Omni stuff.
+
+# Inherit some common TWRP stuff.
 $(call inherit-product, vendor/twrp/config/common.mk)
 
 # Inherit from a03 device
@@ -23,7 +25,10 @@ PRODUCT_MANUFACTURER := samsung
 
 PRODUCT_GMS_CLIENTID_BASE := android-samsung-ss
 
-PRODUCT_BUILD_PROP_OVERRIDES += \
-    PRIVATE_BUILD_DESC="a03nnxx-user 11 RP1A.200720.012 A035FXXU2CVL4 release-keys"
+# Dynamic
+PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
-BUILD_FINGERPRINT := samsung/a03nnxx/a03:11/RP1A.200720.012/A035FXXU2CVL4:user/release-keys
+# fastbootd
+PRODUCT_PACKAGES += \
+    android.hardware.fastboot@1.0-impl-mock \
+    fastbootd
