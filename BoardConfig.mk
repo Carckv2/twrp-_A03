@@ -123,7 +123,7 @@ TARGET_USES_MKE2FS := true
 TW_EXCLUDE_TWRPAPP := true
 TW_OZIP_DECRYPT_KEY := 0000
 TW_INCLUDE_LOGICAL := my_product my_engineering my_preload
-TW_NO_HAPTICS := true
+TW_USE_SAMSUNG_HAPTICS := true
 TW_TOUCH_SUPPORT := true
 
 # Debug
