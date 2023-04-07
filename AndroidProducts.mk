@@ -6,9 +6,4 @@
 #
 
 PRODUCT_MAKEFILES := \
-    $(LOCAL_DIR)/twrp_a03.mk
-
-COMMON_LUNCH_CHOICES := \
-    twrp_a03-user \
-    twrp_a03-userdebug \
-    twrp_a03-eng
+    $(LOCAL_DIR)/lineage_a03.mk
