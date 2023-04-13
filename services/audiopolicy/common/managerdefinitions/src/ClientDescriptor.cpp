@@ -105,11 +105,9 @@ SourceClientDescriptor::SourceClientDescriptor(audio_port_handle_t portId, uid_t
 {
 }
 
-void SourceClientDescriptor::setSwOutput(
-        const sp<SwAudioOutputDescriptor>& swOutput, bool closeOutput)
+void SourceClientDescriptor::setSwOutput(const sp<SwAudioOutputDescriptor>& swOutput)
 {
     mSwOutput = swOutput;
-    mCloseOutput = closeOutput;
 }
 
 void SourceClientDescriptor::setHwOutput(const sp<HwAudioOutputDescriptor>& hwOutput)

@@ -416,23 +416,32 @@ std::variant<status_t, AudioGainTraits::Element> PolicySerializer::deserialize<A
     }
 }
 
+static bool fixedEarpieceChannels = false;
 template<>
 std::variant<status_t, AudioProfileTraits::Element>
 PolicySerializer::deserialize<AudioProfileTraits>(
-        const xmlNode *cur, AudioProfileTraits::PtrSerializingCtx /*serializingContext*/)
+        const xmlNode *cur, AudioProfileTraits::PtrSerializingCtx serializingContext)
 {
     using Attributes = AudioProfileTraits::Attributes;
+    bool isOutput = serializingContext != nullptr;
 
     std::string samplingRates = getXmlAttribute(cur, Attributes::samplingRates);
     std::string format = getXmlAttribute(cur, Attributes::format);
     std::string channels = getXmlAttribute(cur, Attributes::channelMasks);
+    ChannelTraits::Collection channelsMask = channelMasksFromString(channels, mChannelMasksSeparator.c_str());
+
+    //Some Foxconn devices have wrong earpiece channel mask, leading to no channel mask
+    if(channelsMask.size() == 1 && *channelsMask.begin() == AUDIO_CHANNEL_IN_MONO && isOutput) {
+        fixedEarpieceChannels = true;
+        channelsMask = channelMasksFromString("AUDIO_CHANNEL_OUT_MONO", ",");
+    }
 
     if (mIgnoreVendorExtensions && maybeVendorExtension(format)) {
         ALOGI("%s: vendor extension format \"%s\" skipped", __func__, format.c_str());
         return NO_INIT;
     }
     AudioProfileTraits::Element profile = new AudioProfile(formatFromString(format, gDynamicFormat),
-            channelMasksFromString(channels, mChannelMasksSeparator.c_str()),
+            channelsMask,
             samplingRatesFromString(samplingRates, mSamplingRatesSeparator.c_str()));
 
     profile->setDynamicFormat(profile->getFormat() == gDynamicFormat);
@@ -571,7 +580,11 @@ std::variant<status_t, DevicePortTraits::Element> PolicySerializer::deserialize<
             new DeviceDescriptor(type, name, address, encodedFormats);
 
     AudioProfileTraits::Collection profiles;
-    status_t status = deserializeCollection<AudioProfileTraits>(cur, &profiles, NULL);
+    status_t status;
+    if(audio_is_output_devices(type))
+        status = deserializeCollection<AudioProfileTraits>(cur, &profiles, (AudioProfileTraits::PtrSerializingCtx)1);
+    else
+        status = deserializeCollection<AudioProfileTraits>(cur, &profiles, NULL);
     if (status != NO_ERROR) {
         return status;
     }
@@ -591,6 +604,17 @@ std::variant<status_t, DevicePortTraits::Element> PolicySerializer::deserialize<
     ALOGV("%s: adding device tag %s type %08x address %s", __func__,
           deviceDesc->getName().c_str(), type, deviceDesc->address().c_str());
     return deviceDesc;
+}
+
+char* trim(char * s) {
+    int l = strlen(s);
+
+    if (l > 0) {
+      while (isspace(s[l - 1])) --l;
+      while (*s && isspace(*s)) ++s, --l;
+    }
+
+    return strndup(s, l);
 }
 
 template<>
@@ -640,7 +664,10 @@ std::variant<status_t, RouteTraits::Element> PolicySerializer::deserialize<Route
     while (devTag != NULL) {
         if (strlen(devTag) != 0) {
             sp<PolicyAudioPort> source = ctx->findPortByTagName(devTag);
-            if (source == NULL && !mIgnoreVendorExtensions) {
+            if (source == NULL) {
+                source = ctx->findPortByTagName(trim(devTag));
+	    }
+            if (source == NULL && false) {
                 ALOGE("%s: no source found with name=%s", __func__, devTag);
                 return BAD_VALUE;
             } else if (source == NULL) {
@@ -774,6 +801,14 @@ std::variant<status_t, ModuleTraits::Element> PolicySerializer::deserialize<Modu
                 }
             }
         }
+    }
+
+    if(fixedEarpieceChannels) {
+        sp<DeviceDescriptor> device =
+            module->getDeclaredDevices().getDeviceFromTagName("Earpiece");
+        if(device != 0)
+            ctx->addDevice(device);
+        fixedEarpieceChannels = false;
     }
     return module;
 }

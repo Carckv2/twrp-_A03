@@ -602,9 +602,7 @@ protected:
         // true if given state represents a device in a telephony or VoIP call
         virtual bool isStateInCall(int state) const;
         // true if playback to call TX or capture from call RX is possible
-        bool isCallAudioAccessible() const;
-        // true if device is in a telephony or VoIP call or call screening is active
-        bool isInCallOrScreening() const;
+        bool isCallAudioAccessible();
 
         // when a device is connected, checks if an open output can be routed
         // to this device. If none is open, tries to open one of the available outputs.
@@ -639,10 +637,6 @@ protected:
 
         bool isCallRxAudioSource(const sp<SourceClientDescriptor> &source) {
             return mCallRxSourceClient != nullptr && source == mCallRxSourceClient;
-        }
-
-        bool isCallTxAudioSource(const sp<SourceClientDescriptor> &source) {
-            return mCallTxSourceClient != nullptr && source == mCallTxSourceClient;
         }
 
         void connectTelephonyRxAudioSource();
@@ -944,6 +938,9 @@ protected:
 
         SoundTriggerSessionCollection mSoundTriggerSessions;
 
+        sp<AudioPatch> mCallTxPatch;
+        sp<AudioPatch> mCallRxPatch;
+
         HwAudioOutputCollection mHwOutputs;
         SourceClientCollection mAudioSources;
 
@@ -1105,18 +1102,6 @@ private:
                                       const audio_config_t *config,
                                       const AudioDeviceTypeAddrVector &devices) const;
 
-
-        /**
-         * @brief Gets an IOProfile for a spatializer output with the best match with
-         * provided arguments.
-         * The caller can have the devices criteria ignored by passing and empty vector, and
-         * getSpatializerOutputProfile() will ignore the devices when looking for a match.
-         * Otherwise an output profile supporting a spatializer effect that can be routed
-         * to the specified devices must exist.
-         * @param config audio configuration describing the audio format, channels, sample rate...
-         * @param devices the sink audio device selected for playback
-         * @return an IOProfile that canbe used to open a spatializer output.
-         */
         sp<IOProfile> getSpatializerOutputProfile(const audio_config_t *config,
                                                   const AudioDeviceTypeAddrVector &devices) const;
 
